@@ -1,0 +1,81 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/adept/pioneer3/protos/Pioneer3at.proto"
+
+WorldInfo {
+}
+Viewpoint {
+  orientation -0.5058442053798302 -0.4827165564268251 0.7149170343718745 4.439707676935708
+  position 0.2658821123052704 2.501209551687194 7.527441624095714
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+RectangleArena {
+  translation 0.352659 -0.211906 0
+  floorSize 5 5
+}
+Pioneer3at {
+  translation -1.43071 -0.000537475 0.2682
+  rotation 0.2456330634470235 0.9693402503805993 -0.006623981710974562 0.0107785
+  controller "controller_movement"
+  supervisor TRUE
+  extensionSlot [
+    Camera {
+    }
+    Lidar {
+    }
+    Accelerometer {
+    }
+    Gyro {
+    }
+    GPS {
+    }
+  ]
+}
+Solid {
+  translation 0.487558 5.81069e-05 1.10528
+  rotation 0.0005559419140100932 -0.9999998453257591 -1.6644697425493664e-05 -0.060615307179586075
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 1 0 0
+        }
+        texture ImageTexture {
+        }
+      }
+      geometry Cylinder {
+        height 1
+        radius 0.5
+      }
+    }
+  ]
+  boundingObject Cylinder {
+    height 1
+    radius 0.5
+  }
+  physics Physics {
+  }
+}
+Solid {
+  translation 2.09 -1.88 0.01
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 0 1 0
+        }
+        texture ImageTexture {
+        }
+      }
+      geometry Plane {
+      }
+    }
+  ]
+  name "DEF Safe"
+}
