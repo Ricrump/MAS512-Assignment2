@@ -1,5 +1,6 @@
 from controller import Supervisor, Motor, GPS, Lidar, Camera, Accelerometer, Gyro
 import math
+import csv
 
 robot = Supervisor()
 
@@ -61,6 +62,14 @@ if gps:
     
 target_reached = 0.5 
 
+time_history = []
+slip_history = []
+v_enc_history = []
+v_gt_history = []
+
+time_counter = 0.0
+csv_filename = 'data_Friction.csv'
+
 while robot.step(timestep) != -1:
     vx, vz = 0.0, 0.0
     x, z = 0.0, 0.0
@@ -84,7 +93,7 @@ while robot.step(timestep) != -1:
         f_right_motor.setVelocity(0.0)
         b_left_motor.setVelocity(0.0)
         b_right_motor.setVelocity(0.0)
-        continue
+        break
     
     #Collision avoidance
     avoid = False
@@ -106,10 +115,10 @@ while robot.step(timestep) != -1:
         b_left_motor.setVelocity(-1.5)
         b_right_motor.setVelocity(1.5)
     else:
-        f_left_motor.setVelocity(3.0)
-        f_right_motor.setVelocity(3.0)
-        b_left_motor.setVelocity(3.0)
-        b_right_motor.setVelocity(3.0)
+        f_left_motor.setVelocity(6.4)
+        f_right_motor.setVelocity(6.4)
+        b_left_motor.setVelocity(6.4)
+        b_right_motor.setVelocity(6.4)
     
     #Velocity obtained from encoder
     w_f = f_left_motor.getVelocity()
@@ -123,5 +132,19 @@ while robot.step(timestep) != -1:
     vtotal = math.sqrt(vx**2 + vz**2)
     if abs(vx) > 0.001:  #Avoid dividing by 0
         s_long = (v_enc - vtotal) / vtotal
+    
+    time_history.append(time_counter)
+    slip_history.append(s_long)
+    v_enc_history.append(v_enc)
+    v_gt_history.append(vtotal)
         
     print(f"v_enc: {v_enc:.3f} | vx (Ground Truth): {vx:.3f} | s_long: {s_long:.4f}")
+
+#save csv file
+with open(csv_filename, 'w', newline='') as f:
+    writer = csv.writer(f)
+    writer.writerow(['Time', 's_long', 'v_enc', 'v_gt'])
+    for t, s, ve, vg in zip(time_history, slip_history, v_enc_history, v_gt_history):
+        writer.writerow([t, s, ve, vg])
+
+print(f"Exported data correctly!")

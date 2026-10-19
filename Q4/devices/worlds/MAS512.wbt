@@ -6,6 +6,13 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/project
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/adept/pioneer3/protos/Pioneer3at.proto"
 
 WorldInfo {
+  contactProperties [
+    ContactProperties {
+      coulombFriction [
+        0.1
+      ]
+    }
+  ]
 }
 Viewpoint {
   orientation -0.5058442053798302 -0.4827165564268251 0.7149170343718745 4.439707676935708
@@ -62,7 +69,7 @@ Solid {
   physics Physics {
   }
 }
-Solid {
+DEF Safe Solid {
   translation 2.09 -1.88 0.01
   children [
     Shape {
@@ -77,5 +84,5 @@ Solid {
       }
     }
   ]
-  name "DEF Safe"
+  name "Objective"
 }
