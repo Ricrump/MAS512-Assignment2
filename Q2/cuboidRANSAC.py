@@ -2,7 +2,7 @@ import json
 import os
 import time
 import numpy as np
-import open3d as o3d
+import openormal3d as o3d
 
 
 def get_plane_params(triplet):
@@ -27,55 +27,57 @@ def plane_ransac(
         inlier_mask = distances < dist_threshold
         if np.sum(inlier_mask) > inlier_threshold:
             return normal / np.linalg.norm(normal), anchor, inlier_mask
-    print("Insufficient inliers found.")
+    print("Insufficient inliers found. Run again.")
     exit()
 
 
-json_path = "./croppedPlyAnimation/evaluatedData.json"
+json_path = "./Q2/croppedPlyAnimation/evaluatedData.json"
 
 if not os.path.exists(json_path):
     animation_data = []
-    prev_n1, prev_n2 = None, None
+    prev_normal1, prev_normal2 = None, None
 
     for frame in range(99):
         filepath = os.path.join(
-            "croppedPlyAnimation", f"croppedFrame_{(frame+1):04d}.ply"
+            "./Q2/croppedPlyAnimation", f"croppedFrame_{(frame+1):04d}.ply"
         )
         print(filepath)
         points = np.asarray(o3d.io.read_point_cloud(filepath).points)
 
-        n1, _, mask1 = plane_ransac(points, 1500, 0.008, 130)
+        normal1, _, mask1 = plane_ransac(points, 1500, 0.008, 130)
 
         for _ in range(20000):
-            n2, _, mask2 = plane_ransac(points, 1500, 0.008, 70)
-            if abs(n1 @ n2) <= 0.01:
+            normal2, _, mask2 = plane_ransac(points, 1500, 0.008, 70)
+            if abs(normal1 @ normal2) <= 0.01:
                 break
         else:
-            print("No perpendicular plane found.")
+            print("No perpendicular plane found. Run again.")
             exit()
 
         # stabilize axes
-        if prev_n1 is not None and prev_n2 is not None:
+        if prev_normal1 is not None and prev_normal2 is not None:
             if (
-                abs(np.dot(n1, prev_n2)) + abs(np.dot(n2, prev_n1))
-                > abs(np.dot(n1, prev_n1)) + abs(np.dot(n2, prev_n2))
+                abs(np.dot(normal1, prev_normal2)) + abs(np.dot(normal2, prev_normal1))
+                > abs(np.dot(normal1, prev_normal1)) + abs(np.dot(normal2, prev_normal2))
             ):
-                n1, n2, mask1, mask2 = n2, n1, mask2, mask1
+                normal1, normal2, mask1, mask2 = normal2, normal1, mask2, mask1
 
-        if prev_n1 is not None and np.dot(n1, prev_n1) < 0:
-            n1 = -n1
-        if prev_n2 is not None and np.dot(n2, prev_n2) < 0:
-            n2 = -n2
+        if prev_normal1 is not None and np.dot(normal1, prev_normal1) < 0:
+            normal1 = -normal1
+        if prev_normal2 is not None and np.dot(normal2, prev_normal2) < 0:
+            normal2 = -normal2
 
-        prev_n1, prev_n2 = n1, n2
+        prev_normal1, prev_normal2 = normal1, normal2
 
-        n3 = np.cross(n1, n2)
-        n3 /= np.linalg.norm(n3)
+        normal3 = np.cross(normal1, normal2)
+        normal3 /= np.linalg.norm(normal3)
 
-        U, _, Vt = np.linalg.svd(np.column_stack([n1, n2, n3]))
+        # align coordinate frame
+        U, _, Vt = np.linalg.svd(np.column_stack([normal1, normal2, normal3]))
         R_clean = U @ Vt
         trans_pts = points[mask1 | mask2] @ R_clean
 
+        # evaluate box dimensions
         lower = np.array(
             [
                 np.min(trans_pts[:, 0]),
@@ -105,19 +107,20 @@ with open(json_path, "r") as f:
     loaded_frames = json.load(f)
 
 vis = o3d.visualization.Visualizer()
-vis.create_window(window_name="Gecachte Animation", width=1024, height=768)
+vis.create_window(window_name="RANSAC-Animation", width=1024, height=768)
 
 coordinate_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.5)
 vis.add_geometry(coordinate_frame)
 
 pcd = o3d.io.read_point_cloud(
-    os.path.join("croppedPlyAnimation", "croppedFrame_0001.ply")
+    os.path.join("./Q2/croppedPlyAnimation", "croppedFrame_0001.ply")
 )
 vis.add_geometry(pcd)
 view_ctl = vis.get_view_control()
 
 current_T = np.eye(4)
 for frame_idx, frame_data in enumerate(loaded_frames):
+    # form transformation-matrix
     target_T = np.eye(4)
     target_T[:3, :3] = frame_data["matrix"]
     target_T[:3, 3] = frame_data["center"]
@@ -127,7 +130,7 @@ for frame_idx, frame_data in enumerate(loaded_frames):
     current_T = target_T
 
     temp_pcd = o3d.io.read_point_cloud(
-        os.path.join("croppedPlyAnimation", f"croppedFrame_{(frame_idx+1):04d}.ply")
+        os.path.join("./Q2/croppedPlyAnimation", f"croppedFrame_{(frame_idx+1):04d}.ply")
     )
     pcd.points = temp_pcd.points
     if temp_pcd.has_colors():
