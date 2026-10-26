@@ -146,6 +146,10 @@ for frame_idx, frame_data in enumerate(loaded_frames):
 
     view_ctl.set_lookat([0.7405, 1.862, 0.3335])
     view_ctl.set_zoom(0.3)
+
+    # save animation
+    #vis.capture_screen_image(f"./Q2/animation_frames/frame_{frame_idx:04d}.png", do_render=True)
+
     time.sleep(0.1)
 
 vis.run()
