@@ -4,6 +4,7 @@ from ouster.sdk import open_source
 from ouster.sdk.client import ChanField, XYZLut
 import os 
 
+# USE FILES FROM MAS512: lidar-pcd processing-2026 class
 pcap_path = "swinging_load.pcap"
 metadata_path = "swinging_load.json"
 

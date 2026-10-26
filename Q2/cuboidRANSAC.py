@@ -2,7 +2,7 @@ import json
 import os
 import time
 import numpy as np
-import openormal3d as o3d
+import open3d as o3d
 
 
 def get_plane_params(triplet):
@@ -10,7 +10,6 @@ def get_plane_params(triplet):
         np.cross(triplet[0] - triplet[1], triplet[0] - triplet[2]),
         triplet[0],
     )
-
 
 def plane_ransac(
     points, iterations=500, dist_threshold=0.005, inlier_threshold=80
@@ -37,6 +36,7 @@ if not os.path.exists(json_path):
     animation_data = []
     prev_normal1, prev_normal2 = None, None
 
+    # calculate RANSAC for every Frame
     for frame in range(99):
         filepath = os.path.join(
             "./Q2/croppedPlyAnimation", f"croppedFrame_{(frame+1):04d}.ply"
@@ -44,8 +44,10 @@ if not os.path.exists(json_path):
         print(filepath)
         points = np.asarray(o3d.io.read_point_cloud(filepath).points)
 
+        # calculate first side (plane) of cuboid
         normal1, _, mask1 = plane_ransac(points, 1500, 0.008, 130)
 
+        # calculate second side (plane) of cuboid; has to be perpendicular to first side
         for _ in range(20000):
             normal2, _, mask2 = plane_ransac(points, 1500, 0.008, 70)
             if abs(normal1 @ normal2) <= 0.01:
@@ -54,7 +56,7 @@ if not os.path.exists(json_path):
             print("No perpendicular plane found. Run again.")
             exit()
 
-        # stabilize axes
+        # stabilize axes with previous frames (prevent fliping)
         if prev_normal1 is not None and prev_normal2 is not None:
             if (
                 abs(np.dot(normal1, prev_normal2)) + abs(np.dot(normal2, prev_normal1))
@@ -69,15 +71,16 @@ if not os.path.exists(json_path):
 
         prev_normal1, prev_normal2 = normal1, normal2
 
+        # calculate third normal (side)
         normal3 = np.cross(normal1, normal2)
         normal3 /= np.linalg.norm(normal3)
 
-        # align coordinate frame
+        # align coordinate frame (by singular value decomposition without stretched and skewed part)
         U, _, Vt = np.linalg.svd(np.column_stack([normal1, normal2, normal3]))
         R_clean = U @ Vt
         trans_pts = points[mask1 | mask2] @ R_clean
 
-        # evaluate box dimensions
+        # evaluate box dimensions (by only taking points with z-Value between 5 and 95 percentile in account)
         lower = np.array(
             [
                 np.min(trans_pts[:, 0]),
@@ -102,7 +105,7 @@ if not os.path.exists(json_path):
     with open(json_path, "w") as f:
         json.dump(animation_data, f)
 
-# VISUALIZATION
+# VISUALIZATION/Animation
 with open(json_path, "r") as f:
     loaded_frames = json.load(f)
 
